@@ -53,6 +53,492 @@ namespace NES_Disassembler
         // Number of 8 KB blocks of CHR ROM
         static byte numberOfCHRROMBlocks;
 
+        // Subroutine starting addresses
+        static List<int>? subroutineStartingAddresses;
+
+        enum AddressingMode
+        {
+            Implied,
+            Accumulator,
+            Immediate,
+            ZeroPage,
+            ZeroPageX,
+            ZeroPageY,
+            Absolute,
+            AbsoluteX,
+            AbsoluteY,
+            Indirect,
+            IndirectX,
+            IndirectY,
+            Relative,
+        }
+
+        static string UseAddressingMode( AddressingMode a, List<Byte> bF, uint pc)
+        {
+            
+            //String s = "          ; ";
+            String s = "";
+
+            String opcodeString = "";
+
+            switch (a)
+            {
+                case AddressingMode.Implied:
+                    break;
+
+                case AddressingMode.Accumulator:
+                    //s += "Accumulator";
+                    break;
+                case AddressingMode.Immediate:
+                    //s += "#Immediate";
+                    opcodeString += "#$";
+                    operandLength = 1;
+                    break;
+                case AddressingMode.ZeroPage:
+                    //s += "Zero Page";
+                    operandLength = 1;
+                    opcodeString += "z:$";
+                    break;
+                case AddressingMode.ZeroPageX:
+                    //s += "Zero Page, X";
+                    operandLength = 1;
+                    opcodeString += "z:$";
+                    break;
+                case AddressingMode.ZeroPageY:
+                    //s += "Zero Page, Y";
+                    operandLength = 1;
+                    opcodeString += "z:$";
+                    break;
+                case AddressingMode.Absolute:
+                    //s += "Absolute";
+                    operandLength = 2;
+                    opcodeString += "a:$";
+                    break;
+                case AddressingMode.AbsoluteX:
+                    //s += "Absolute, X";
+                    operandLength = 2;
+                    opcodeString += "a:$";
+                    break;
+                case AddressingMode.AbsoluteY:
+                    //s += "Absolute, Y";
+                    operandLength = 2;
+                    opcodeString += "a:$";
+                    break;
+                case AddressingMode.Indirect:
+                    operandLength = 2;
+                    opcodeString += "($";
+                    break;
+                case AddressingMode.IndirectX:
+                    //s += "(Indirect, X)";
+                    opcodeString += "($";
+                    operandLength = 1;
+                    break;
+                case AddressingMode.IndirectY:
+                    //s += "(Indirect), Y";
+                    opcodeString += "($";
+                    operandLength = 1;
+                    break;
+                case AddressingMode.Relative:
+                    //s += "Relative";
+                    operandLength = 1;
+                    opcodeString += "$";
+                    break;
+            }
+
+            /*if(bF[(int)PC + 0x10] < 0x10)
+                opcodeString += $"0{bF[(int)PC + 0x10]:X}";
+            else
+                opcodeString += $"{bF[(int)PC + 0x10]:X}";*/
+
+            if (operandLength == 1)
+            {
+                if (bF[(int)PC + 0x10 + 0x1] < 0x10)
+                    opcodeString += $"0{bF[(int)PC + 0x10 + 0x1]:X}";
+                else
+                    opcodeString += $"{bF[(int)PC + 0x10 + 0x1]:X}";
+            }
+                
+
+            //if(operandLength == 2)
+                //opcodeString += $" {bF[(int)PC + 0x10 + 0x2]:X}";
+
+            // 6502 is little endian, so reverse the bytes when the operand is 2 bytes long
+            if (operandLength == 2)
+            {
+                if (bF[(int)PC + 0x10 + 0x2] < 0x10)
+                    opcodeString += $"0{bF[(int)PC + 0x10 + 0x2]:X}";
+                else
+                    opcodeString += $"{bF[(int)PC + 0x10 + 0x2]:X}";
+
+                /*if (bF[(int)PC + 0x10 + 0x1] < 0x10)
+                    opcodeString += $" $0{bF[(int)PC + 0x10 + 0x1]:X}";
+                else
+                    opcodeString += $" ${bF[(int)PC + 0x10 + 0x1]:X}";*/
+
+                if (bF[(int)PC + 0x10 + 0x1] < 0x10)
+                    opcodeString += $"0{bF[(int)PC + 0x10 + 0x1]:X}";
+                else
+                    opcodeString += $"{bF[(int)PC + 0x10 + 0x1]:X}";
+            }
+
+            //return s;
+
+            //if (a == AddressingMode.ZeroPage)
+                //opcodeString += " zp";
+
+            if (a == AddressingMode.ZeroPageX)
+                opcodeString += ", X";
+
+            else if (a == AddressingMode.ZeroPageY)
+                opcodeString += ", Y";
+
+            //else if (a == AddressingMode.Absolute)
+                //opcodeString += " abs";
+
+            else if (a == AddressingMode.AbsoluteX)
+                opcodeString += ", X";
+
+            else if (a == AddressingMode.AbsoluteY)
+                opcodeString += ", Y";
+
+            if (a == AddressingMode.Indirect)
+                opcodeString += ")";
+
+            else if (a == AddressingMode.IndirectX)
+                opcodeString += ", X)";
+
+            else if (a == AddressingMode.IndirectY)
+                opcodeString += "), Y";
+
+            return opcodeString;
+        }
+
+        /*
+         * Assembly functions
+         */
+
+        static string ADC(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "ADC: Add with Carry using " + UseAddressingMode(a);
+            return "ADC " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string AND(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "AND: Bitwise AND with " + UseAddressingMode(a);
+            return "AND " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string ASL(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "ASL: Arithmetic Shift Left of the " + UseAddressingMode(a);
+            return "ASL " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string BCC(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "BCC " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string BCS(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "BCS " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string BEQ(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "BEQ " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string BIT(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "BIT " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string BMI(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "BMI " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string BNE(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "BNE " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string BPL(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "BPL " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string BVC(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "BVC " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string BVS(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "BVS " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string CLC(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "CLC " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string CLD(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "CLD" + UseAddressingMode(a, bF, pc);
+        }
+
+        static string CLI(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "CLI " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string CLV(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "CLV " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string CMP(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "CMP: Compare Accumulator to " + UseAddressingMode(a);
+            return "CMP " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string CPX(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "CPX: Compare X to " + UseAddressingMode(a);
+            return "CPX " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string CPY(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "CPY: Compare Y to " + UseAddressingMode(a);
+            return "CPY " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string DEC(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "DEC: Decrement " + UseAddressingMode(a);
+            return "DEC " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string DEX(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "DEX " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string DEY(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "DEY " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string EOR(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "EOR " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string INC(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "INC: Increment " + UseAddressingMode(a);
+            return "INC " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string INX(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "INC: Increment " + UseAddressingMode(a);
+            return "INX " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string INY(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "INC: Increment " + UseAddressingMode(a);
+            return "INY" + UseAddressingMode(a, bF, pc);
+        }
+
+        static string JMP(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            return "JMP " + UseAddressingMode(a, bF, pc);
+        }
+
+        // Jump to subroutine
+        static string JSR(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            // When we jump to a particular subroutine address, we want to mark it
+            // JSR always has an absolute addressing mode, so read the next two bytes and reverse them to get the address
+            int b1 = bF[(int)pc + 0x10 + 0x2];
+            int b2 = bF[(int)pc + 0x10 + 0x1];
+            subroutineStartingAddresses.Add(b1 * 256 + b2);
+
+            return "JSR " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string LDA(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "LDA: Load Accumulator using " + UseAddressingMode(a);
+            return "LDA " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string LDX(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "LDX: Load X using " + UseAddressingMode(a);
+            return "LDX " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string LDY(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "LDY: Load Y using " + UseAddressingMode(a);
+            return "LDY " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string LSR(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "LSR: Logical Shift Right of the " + UseAddressingMode(a);
+            return "LSR " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string NOP(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "LSR: Logical Shift Right of the " + UseAddressingMode(a);
+            return "NOP " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string ORA(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "ORA: Bitwise OR with " + UseAddressingMode(a);
+            return "ORA " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string PHP(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "LSR: Logical Shift Right of the " + UseAddressingMode(a);
+            return "PHP " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string PLA(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "LSR: Logical Shift Right of the " + UseAddressingMode(a);
+            return "PLA " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string PLP(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "LSR: Logical Shift Right of the " + UseAddressingMode(a);
+            return "PLP " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string ROL(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "ROL: Rotate Left " + UseAddressingMode(a);
+            return "ROL " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string ROR(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "ROR: Rotate Right the " + UseAddressingMode(a);
+            return "ROR " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string RTI(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "ROL: Rotate Left " + UseAddressingMode(a);
+            return "RTI " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string RTS(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            // When we return fom a particular subroutine address, we want to mark it
+            // RTS always has an implied addressing mode, so use the current program counter
+            //subroutineEndingAddresses.Add(pc);
+
+            return "RTS" + UseAddressingMode(a, bF, pc);
+        }
+
+        static string SBC(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "SBC: Subtract with Carry using " + UseAddressingMode(a);
+            return "SBC " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string SEC(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "SEC: Set Carry;
+            return "SEC " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string SED(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "SEC: Set Carry;
+            return "SED " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string SEI(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "SEC: Set Carry;
+            return "SEI" + UseAddressingMode(a, bF, pc);
+        }
+
+        static string STA(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "STA: Store from Accumulator into " + UseAddressingMode(a);
+            return "STA " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string STX(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "STX: Store from X into " + UseAddressingMode(a);
+            return "STX " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string STY(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "STY: Store from Y into " + UseAddressingMode(a);
+            return "STY " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string TAX(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "STY: Store from Y into " + UseAddressingMode(a);
+            return "TAX" + UseAddressingMode(a, bF, pc);
+        }
+
+        static string TAY(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "STY: Store from Y into " + UseAddressingMode(a);
+            return "TAY" + UseAddressingMode(a, bF, pc);
+        }
+
+        static string TSX(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "STY: Store from Y into " + UseAddressingMode(a);
+            return "TSX" + UseAddressingMode(a, bF, pc);
+        }
+
+        static string TSY(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "STY: Store from Y into " + UseAddressingMode(a);
+            return "TSY" + UseAddressingMode(a, bF, pc);
+        }
+
+        static string TXA(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "STY: Store from Y into " + UseAddressingMode(a);
+            return "TXA " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string TXS(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "STY: Store from Y into " + UseAddressingMode(a);
+            return "TXS " + UseAddressingMode(a, bF, pc);
+        }
+
+        static string TYA(AddressingMode a, List<Byte> bF, uint pc)
+        {
+            //return "STY: Store from Y into " + UseAddressingMode(a);
+            return "TYA " + UseAddressingMode(a, bF, pc);
+        }
+
         static List<byte> ReadFileData(string fileName)
         {
             List<byte> bytes = new List<byte>();
@@ -94,1175 +580,1113 @@ namespace NES_Disassembler
             return bytes;
         }
 
-        static string Decode(byte b)
+        static string Decode(List<Byte> bF, uint pc)
         {
+            byte b = bF[(int)PC + 0x10];
+
             // Instruction set
-            string instructionString = "Instruction: ";
+            //string instructionString = "Instruction: ";
+            string instructionString = "";
 
             // Instructions (1 byte length + 0-2 bytes of operands)
             switch (b)
             {
                 case 0x00:
-                    instructionString += "BRK: Break (software IRQ)";
+                    instructionString += "BRK";
 
                     // Set the interrupt disable flag to 1
-                    statusRegister = (byte)(statusRegister & 0x00000100);
+                    //statusRegister = (byte)(statusRegister & 0x00000100);
 
                     // The return address pushed to the stack skips the byte after the BRK opcode, so it's often considered a 2-byte instruction with an unused immediate
                     operandLength = 1;
                     break;
 
                 case 0x01:
-                    instructionString += "ORA: Bitwise OR with (Indirect, X)";
-                    operandLength = 1;
+                    instructionString += ORA(AddressingMode.IndirectX, bF, pc);
                     break;
 
                 case 0x02:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0x03:
-                    instructionString += "SLO: Set LSB in memory OR Accumulator in Indirect, X (Illegal)";
+                    instructionString += "*SLO";
                     break;
 
                 case 0x04:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x05:
-                    instructionString += "ORA: Bitwise OR with Zero Page";
-                    operandLength += 1;
+                    instructionString += ORA(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x06:
-                    instructionString += "ASL: Arithmetic Shift Left of the Zero Page";
-                    operandLength += 1;
+                    instructionString += ASL(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x07:
-                    instructionString += "SLO: Illegal";
+                    instructionString += "*SLO";
                     break;
 
                 case 0x08:
-                    instructionString += "PHP: Push Processor Status Register Implied";
+                    //instructionString += "PHP: Push Processor Status Register";
+                    instructionString += PHP(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x09:
-                    instructionString += "ORA: Bitwise OR with #Immediate";
-                    operandLength = 1;
+                    instructionString += ORA(AddressingMode.Immediate, bF, pc);
                     break;
 
                 case 0x0A:
-                    instructionString += "ASL: Arithmetic Shift Left of the Accumulator";
+                    instructionString += ASL(AddressingMode.Accumulator, bF, pc);
                     break;
 
                 case 0x0B:
-                    instructionString += "ANC: Illegal";
+                    instructionString += "*ANC";
                     break;
 
                 case 0x0C:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x0D:
-                    instructionString += "ORA: Bitwise OR with Absolute";
-                    operandLength += 2;
+                    instructionString += ORA(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x0E:
-                    instructionString += "ASL: Arithmetic Shift Left of the Absolute";
-                    operandLength += 2;
+                    instructionString += ASL(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x0F:
-                    instructionString += "SLO: Illegal";
+                    instructionString += "*SLO";
                     break;
 
                 case 0x10:
-                    instructionString += "BPL: Branch if Plus Relative";
-                    operandLength = 1;
+                    //instructionString += "BPL: Branch if Plus Relative";
+                    instructionString += BPL(AddressingMode.Relative, bF, pc);
                     break;
 
                 case 0x11:
-                    instructionString += "ORA: Bitwise OR with (Indirect), Y";
-                    operandLength = 1;
+                    instructionString += ORA(AddressingMode.IndirectY, bF, pc);
                     break;
 
                 case 0x12:
-                    instructionString += "KIL: Crash (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0x13:
-                    instructionString += "SLO: Illegal";
+                    instructionString += "*SLO";
                     break;
 
                 case 0x14:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x15:
-                    instructionString += "ORA: Bitwise OR with Zero Page, X";
-                    operandLength = 1;
+                    instructionString += ORA(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0x16:
-                    instructionString += "ASL: Arithmetic Shift Left of the Zero Page, X";
-                    operandLength += 1;
+                    instructionString += ASL(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0x17:
-                    instructionString += "SLO: Illegal";
+                    instructionString += "*SLO";
                     break;
 
                 case 0x18:
-                    instructionString += "CLC: Clear Carry";
+                    //instructionString += "CLC: Clear Carry";
+                    instructionString += CLC(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x19:
-                    instructionString += "ORA: Bitwise OR with Absolute, Y";
-                    operandLength = 2;
+                    instructionString += ORA(AddressingMode.AbsoluteY, bF, pc);
                     break;
 
                 case 0x1A:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x1B:
-                    instructionString += "SLO: Illegal";
+                    instructionString += "*SLO";
                     break;
 
                 case 0x1C:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x1D:
-                    instructionString += "ORA: Bitwise OR with Absolute, X";
-                    operandLength = 2;
+                    instructionString += ORA(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0x1E:
-                    instructionString += "ASL: Arithmetic Shift Left of the Absolute, X";
-                    operandLength += 2;
+                    instructionString += ASL(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0x1F:
-                    instructionString += "SLO: Illegal";
+                    instructionString += "*SLO";
                     break;
 
                 case 0x20:
-                    instructionString += "JSR: Jump to Subroutine Absolute";
+                    //instructionString += "JSR: Jump to Subroutine Absolute";
+                    instructionString += JSR(AddressingMode.Absolute, bF, pc);
                     operandLength = 2;
                     break;
 
                 case 0x21:
-                    instructionString += "AND: Bitwise AND with (Indirect, X)";
-                    operandLength += 1;
+                    instructionString += AND(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0x22:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0x23:
-                    instructionString += "RLA: Illegal";
+                    instructionString += "*RLA";
                     break;
 
                 case 0x24:
-                    instructionString += "BIT: Bit Test using Zero Page";
-                    operandLength = 1;
+                    //instructionString += "BIT: Bit Test using Zero Page";
+                    instructionString += BIT(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x25:
-                    instructionString += "AND: Bitwise AND with Zero Page";
-                    operandLength += 1;
+                    instructionString += AND(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x26:
-                    instructionString += "ROL: Rotate Left Zero Page";
-                    operandLength += 1;
+                    instructionString += ROL(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x27:
-                    instructionString += "RLA: ROL and AND (Illegal)";
+                    instructionString += "*RLA";
                     break;
 
                 case 0x28:
-                    instructionString += "PLP: Pull Processor Status";
+                    //instructionString += "PLP: Pull Processor Status";
+                    instructionString += PLP(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x29:
-                    instructionString += "AND: Bitwise AND #Immediate";
-                    operandLength += 1;
+                    instructionString += AND(AddressingMode.Immediate, bF, pc);
                     break;
 
                 case 0x2A:
-                    instructionString += "ROL: Rotate Left Accumulator";
+                    instructionString += ROL(AddressingMode.Accumulator, bF, pc);
                     break;
 
                 case 0x2B:
-                    instructionString += "ANC: Illegal";
+                    instructionString += "*ANC";
                     break;
 
                 case 0x2C:
-                    instructionString += "BIT: Bit Test using Absolute";
-                    operandLength = 2;
+                    //instructionString += "BIT: Bit Test using Absolute";
+                    instructionString += BIT(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x2D:
-                    instructionString += "AND: Bitwise AND with Absolute";
-                    operandLength += 2;
+                    instructionString += AND(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x2E:
-                    instructionString += "ROL: Rotate Left Absolute";
-                    operandLength += 2;
+                    instructionString += ROL(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x2F:
-                    instructionString += "RLA: Illegal";
+                    instructionString += "*RLA";
                     break;
 
                 case 0x30:
-                    instructionString += "BMI: Branch if Minus";
-                    operandLength += 1;
+                    //instructionString += "BMI: Branch if Minus";
+                    instructionString += BMI(AddressingMode.Relative, bF, pc);
                     break;
 
                 case 0x31:
-                    instructionString += "AND: Bitwise AND with (Indirect), Y";
-                    operandLength += 1;
+                    instructionString += AND(AddressingMode.IndirectY, bF, pc);
                     break;
 
                 case 0x32:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0x33:
-                    instructionString += "RLA: Illegal";
+                    instructionString += "*RLA";
                     break;
 
                 case 0x34:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x35:
-                    instructionString += "AND: Bitwise AND with Zero Page, X";
-                    operandLength += 1;
+                    instructionString += AND(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0x36:
-                    instructionString += "ROL: Rotate Left Zero Page, X";
-                    operandLength += 1;
+                    instructionString += ROL(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0x37:
-                    instructionString += "RLA: Illegal";
+                    instructionString += "*RLA";
                     break;
 
                 case 0x38:
-                    instructionString += "SEC: Set Carry";
+                    //instructionString += "SEC: Set Carry";
+                    instructionString += SEC(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x39:
-                    instructionString += "AND: Bitwise AND with Absolute, Y";
-                    operandLength += 2;
+                    instructionString += AND(AddressingMode.AbsoluteY, bF, pc);
                     break;
 
                 case 0x3A:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x3B:
-                    instructionString += "RLA: Illegal";
+                    instructionString += "*RLA";
                     break;
 
                 case 0x3C:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x3D:
-                    instructionString += "AND: Bitwise AND with Absolute, X";
-                    operandLength += 2;
+                    instructionString += AND(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0x3E:
-                    instructionString += "ROL: Rotate Left Absolute, X";
-                    operandLength += 2;
+                    instructionString += ROL(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0x3F:
-                    instructionString += "RLA: Illegal";
+                    instructionString += "*RLA";
                     break;
 
                 case 0x40:
-                    instructionString += "RTI: Return from Interrupt";
+                    //instructionString += "RTI: Return from Interrupt";
+                    instructionString += RTI(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x41:
-                    instructionString += "EOR: Bitwise Exclusive OR with (Indirect, X)";
-                    operandLength = 1;
+                    //instructionString += "EOR: Bitwise Exclusive OR with (Indirect, X)";
+                    instructionString += EOR(AddressingMode.IndirectX, bF, pc);
                     break;
 
                 case 0x42:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0x43:
-                    instructionString += "SRE: Illegal";
+                    instructionString += "*SRE";
                     break;
 
                 case 0x44:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x45:
-                    instructionString += "EOR: Bitwise Exclusive OR Zero Page";
+                    //instructionString += "EOR: Bitwise Exclusive OR Zero Page";
+                    instructionString += EOR(AddressingMode.ZeroPage, bF, pc);
                     operandLength = 1;
                     break;
 
                 case 0x46:
-                    instructionString += "LSR: Logical Shift Right of the Zero Page";
-                    operandLength += 1;
+                    instructionString += LSR(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x47:
-                    instructionString += "SRE: Illegal";
+                    instructionString += "*SRE";
                     break;
 
                 case 0x48:
-                    instructionString += "PHA: Push A";
+                    //instructionString += "PHA: Push A";
+                    instructionString += "PHA";
                     break;
 
                 case 0x49:
-                    instructionString += "EOR: Bitwise Exclusive OR #Immediate";
+                    //instructionString += "EOR: Bitwise Exclusive OR #Immediate";
+                    instructionString += EOR(AddressingMode.Immediate, bF, pc);
                     operandLength = 1;
                     break;
 
                 case 0x4A:
-                    instructionString += "LSR: Logical Shift Right of the Accumulator";
+                    instructionString += LSR(AddressingMode.Accumulator, bF, pc);
                     break;
 
                 case 0x4B:
-                    instructionString += "ALR: Illegal";
+                    instructionString += "*ALR";
                     break;
 
                 case 0x4C:
-                    instructionString += "JMP: Jump Absolute";
+                    //instructionString += "JMP: Jump Absolute";
+                    instructionString += JMP(AddressingMode.Absolute, bF, pc);
                     operandLength = 2;
                     break;
 
                 case 0x4D:
-                    instructionString += "EOR: Bitwise Exclusive OR with Absolute";
+                    //instructionString += "EOR: Bitwise Exclusive OR with Absolute";
+                    instructionString += EOR(AddressingMode.Absolute, bF, pc);
                     operandLength = 2;
                     break;
 
                 case 0x4E:
-                    instructionString += "LSR: Logical Shift Right of the Absolute";
-                    operandLength += 2;
+                    instructionString += LSR(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x4F:
-                    instructionString += "ALR: Illegal";
+                    instructionString += "*ALR";
                     break;
 
                 case 0x50:
-                    instructionString = "BVC: Branch if Overflow Clear";
+                    //instructionString = "BVC: Branch if Overflow Clear";
+                    instructionString = BVC(AddressingMode.Relative, bF, pc);
                     operandLength += 1;
                     break;
 
                 case 0x51:
-                    instructionString += "EOR: Bitwise Exclusive OR with (Indirect, Y)";
-                    operandLength += 1;
+                    //instructionString += "EOR: Bitwise Exclusive OR with (Indirect, Y)";
+                    instructionString += EOR(AddressingMode.IndirectY, bF, pc);
                     break;
 
                 case 0x52:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0x53:
-                    instructionString += "SRE: Illegal";
+                    instructionString += "*SRE";
                     break;
 
                 case 0x54:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x55:
-                    instructionString += "EOR: Bitwise Exclusive OR Zero Page, X";
+                    //instructionString += "EOR: Bitwise Exclusive OR Zero Page, X";
+                    instructionString += EOR(AddressingMode.ZeroPageX, bF, pc);
                     operandLength = 1;
                     break;
 
                 case 0x56:
-                    instructionString += "LSR: Logical Shift Right of the Zero Page, X";
-                    operandLength += 1;
+                    instructionString += LSR(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0x57:
-                    instructionString += "SRE: Illegal";
+                    instructionString += "*SRE";
                     break;
 
                 case 0x58:
-                    instructionString += "CLI: Clear Interrupt Disable";
+                    //instructionString += "CLI: Clear Interrupt Disable";
+                    instructionString += CLI(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x59:
-                    instructionString += "EOR: Bitwise Exclusive OR with Absolute, Y";
+                    //instructionString += "EOR: Bitwise Exclusive OR with Absolute, Y";
+                    instructionString += EOR(AddressingMode.AbsoluteY, bF, pc);
                     operandLength = 2;
                     break;
 
                 case 0x5A:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x5B:
-                    instructionString += "Illegal operation";
+                    instructionString += "*SRE";
                     break;
 
                 case 0x5C:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x5D:
-                    instructionString += "EOR: Bitwise Exclusive OR with Absolute, X";
+                    //instructionString += "EOR: Bitwise Exclusive OR with Absolute, X";
+                    instructionString += EOR(AddressingMode.AbsoluteX, bF, pc);
                     operandLength = 2;
                     break;
 
                 case 0x5E:
-                    instructionString += "LSR: Logical Shift Right of the Absolute, X";
-                    operandLength += 2;
+                    instructionString += LSR(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0x5F:
-                    instructionString += "SRE: Illegal";
+                    instructionString += "*SRE";
                     break;
 
                 case 0x60:
-                    instructionString += "RTS: Return from Subroutine";
+                    //instructionString += "RTS: Return from Subroutine";
+                    instructionString += RTS(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x61:
-                    instructionString += "ADC: Add with Carry using (Indirect, X)";
-                    operandLength += 1;
+                    instructionString += ADC(AddressingMode.IndirectX, bF, pc);
                     break;
 
                 case 0x62:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0x63:
-                    instructionString += "RRE: Illegal";
+                    instructionString += "*RRE";
                     break;
 
                 case 0x64:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x65:
-                    instructionString += "ADC: Add with Carry using Zero Page";
-                    operandLength += 1;
+                    instructionString += ADC(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x66:
-                    instructionString += "ROR: Rotate Right the Zero Page";
-                    operandLength += 1;
+                    instructionString += ROR(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x67:
-                    instructionString += "RRA: Illegal";
+                    instructionString += "*RRA";
                     break;
 
                 case 0x68:
-                    instructionString += "PLA: Pull Accumulator";
+                    //instructionString += "PLA: Pull Accumulator";
+                    instructionString += PLA(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x69:
-                    instructionString += "ADC: Add with Carry using #Immediate";
-                    operandLength += 1;
+                    instructionString += ADC(AddressingMode.Immediate, bF, pc);
                     break;
 
                 case 0x6A:
-                    instructionString += "ROR: Rotate Right the Accumulator";
+                    instructionString += ROR(AddressingMode.Accumulator, bF, pc);
                     break;
 
                 case 0x6B:
-                    instructionString += "ARR: Illegal";
+                    instructionString += "*ARR";
                     break;
 
                 case 0x6C:
-                    instructionString += "JMP: Jump (Indirect)";
+                    //instructionString += "JMP: Jump (Indirect)";
+                    instructionString += JMP(AddressingMode.Indirect, bF, pc);
                     operandLength = 2;
                     break;
 
                 case 0x6D:
-                    instructionString += "ADC: Add with Carry using Absolute";
-                    operandLength += 2;
+                    instructionString += ADC(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x6E:
-                    instructionString += "ROR: Rotate Right the Absolute";
-                    operandLength += 2;
+                    instructionString += ROR(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x6F:
-                    instructionString += "RRA: Illegal";
+                    instructionString += "*RRA";
                     break;
 
                 case 0x70:
-                    instructionString = "BVS: Branch if Overflow Set";
-                    operandLength += 1;
+                    //instructionString = "BVS: Branch if Overflow Set";
+                    instructionString = BVS(AddressingMode.Relative, bF, pc);
                     break;
 
                 case 0x71:
-                    instructionString += "ADC: Add with Carry (Indirect, Y)";
-                    operandLength = 1;
+                    instructionString += ADC(AddressingMode.IndirectY, bF, pc);
                     break;
 
                 case 0x72:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0x73:
-                    instructionString += "RRA: Illegal";
+                    instructionString += "*RRA";
                     break;
 
                 case 0x74:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x75:
-                    instructionString += "ADC: Add with Carry using Zero Page, X";
-                    operandLength += 1;
+                    instructionString += ADC(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0x76:
-                    instructionString += "ROR: Rotate Right the Zero Page, X";
-                    operandLength += 1;
+                    instructionString += ROR(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0x77:
-                    instructionString += "RRA: Illegal";
+                    instructionString += "*RRA";
                     break;
 
                 case 0x78:
-                    instructionString += "SEI: Set Interrupt Disable";
+                    //instructionString += "SEI: Set Interrupt Disable";
+                    instructionString += SEI(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x79:
-                    instructionString += "ADC: Add with Carry using Absolute, Y";
-                    operandLength += 2;
+                    instructionString += ADC(AddressingMode.AbsoluteY, bF, pc);
                     break;
 
                 case 0x7A:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x7B:
-                    instructionString += "RRA: Illegal";
+                    instructionString += "*RRA";
                     break;
 
                 case 0x7C:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x7D:
-                    instructionString += "ADC: Add with Carry using Absolute, X";
-                    operandLength += 2;
+                    instructionString += ADC(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0x7E:
-                    instructionString += "ROR: Rotate Right the Absolute, X";
-                    operandLength += 2;
+                    instructionString += ROR(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0x7F:
-                    instructionString += "RRA: Illegal";
+                    instructionString += "*RRA";
                     break;
 
                 case 0x80:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x81:
-                    instructionString += "STA: Store Accumulator into (Indirect, X)";
-                    operandLength += 1;
+                    instructionString += STA(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0x82:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x83:
-                    instructionString += "SAX: Illegal";
+                    instructionString += "*SAX";
                     break;
 
                 case 0x84:
-                    instructionString += "STY: Store from Y using Zero Page";
-                    operandLength += 1;
+                    instructionString += STY(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x85:
-                    instructionString += "STA: Store from Accumulator into Zero Page";
-                    operandLength += 1;
+                    instructionString += STA(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x86:
-                    instructionString += "STX: Store from X using Zero Page";
-                    operandLength += 1;
+                    instructionString += STX(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0x87:
-                    instructionString += "SAX: Illegal";
+                    instructionString += "*SAX";
                     break;
 
                 case 0x88:
-                    instructionString += "DEY: Decrement Index Register Y";
+                    //instructionString += "DEY: Decrement Index Register Y";
+                    instructionString += DEY(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x89:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0x8A:
-                    instructionString += "TXA: Transfer X to A";
+                    //instructionString += "TXA: Transfer X to A";
+                    instructionString += TXA(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x8B:
-                    instructionString += "XAA or ANE: Illegal operation";
+                    instructionString += "*XAA";
                     break;
 
                 case 0x8C:
-                    instructionString += "STY: Store Register Y to Absolute";
-                    operandLength += 2;
+                    instructionString += STY(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x8D:
-                    instructionString += "STA: Store from Accumulator into Absolute";
-                    operandLength += 2;
+                    instructionString += STA(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x8E:
-                    instructionString += "STX: Store from X into Absolute";
-                    operandLength += 2;
+                    instructionString += STX(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0x8F:
-                    instructionString += "SAX: Illegal";
+                    instructionString += "*SAX";
                     break;
 
                 case 0x90:
-                    instructionString += "BCC: Branch if Carry Clear";
+                    //instructionString += "BCC: Branch if Carry Clear";
+                    instructionString += BCC(AddressingMode.Relative, bF, pc);
                     operandLength = 1;
                     break;
 
                 case 0x91:
-                    instructionString += "STA: Store from Accumulator using (Indirect), Y";
-                    operandLength = 1;
+                    instructionString += STA(AddressingMode.IndirectY, bF, pc);
                     break;
 
                 case 0x92:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0x93:
-                    instructionString += "AHX: Illegal";
+                    instructionString += "*AHX";
                     break;
 
                 case 0x94:
-                    instructionString += "STA: Store from Y into Zero Page, X";
-                    operandLength += 1;
+                    instructionString += STY(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0x95:
-                    instructionString += "STA: Store Accumulator into Zero Page, X";
-                    operandLength += 1;
+                    instructionString += STA(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0x96:
-                    instructionString += "STA: Store from X into Zero Page, Y";
-                    operandLength += 1;
+                    instructionString += STX(AddressingMode.ZeroPageY, bF, pc);
                     break;
 
                 case 0x97:
-                    instructionString += "SAX: Illegal";
+                    instructionString += "*SAX";
                     break;
 
                 case 0x98:
-                    instructionString += "TYA: Transfer Y to A";
+                    //instructionString += "TYA: Transfer Y to A";
+                    instructionString += TYA(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x99:
-                    instructionString += "STA: Store Accumulator into Absolute, Y";
-                    operandLength += 2;
+                    instructionString += STA(AddressingMode.AbsoluteY, bF, pc);
                     break;
 
                 case 0x9A:
-                    instructionString += "TXS: Transfer X to Stack Pointer";
+                    //instructionString += "TXS: Transfer X to Stack Pointer";
+                    instructionString += TXS(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0x9B:
-                    instructionString += "TAS: Illegal";
+                    instructionString += "*TAS";
                     break;
 
                 case 0x9C:
-                    instructionString += "SHY: Illegal";
+                    instructionString += "*SHY";
                     break;
 
                 case 0x9D:
-                    instructionString += "STA: Store Accumulator into Absolute, X";
-                    operandLength += 2;
+                    instructionString += STA(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0x9E:
-                    instructionString += "SHX: Illegal";
+                    instructionString += "*SHX";
                     break;
 
                 case 0x9F:
-                    instructionString += "AHX: Illegal";
+                    instructionString += "*AHX";
                     break;
 
                 case 0xA0:
-                    instructionString += "LDY: Load Index Register Y using #Immediate";
-                    operandLength += 1;
+                    instructionString += LDY(AddressingMode.Immediate, bF, pc);
                     break;
 
                 case 0xA1:
-                    instructionString += "LDA: Load Accumulator (Indirect), X";
-                    operandLength += 1;
+                    instructionString += LDA(AddressingMode.IndirectX, bF, pc);
                     break;
 
                 case 0xA2:
-                    instructionString += "LDX: Load Index Register X using #Immediate";
-                    operandLength += 1;
+                    instructionString += LDX(AddressingMode.Immediate, bF, pc);
                     break;
 
                 case 0xA3:
-                    instructionString += "LAX: Illegal";
+                    instructionString += "*LAX";
                     break;
 
                 case 0xA4:
-                    instructionString += "LDY: Load Index Register Y using Zero Page";
-                    operandLength += 1;
+                    instructionString += LDY(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0xA5:
-                    instructionString += "LDA: Load Accumulator using Zero Page";
-                    operandLength += 1;
+                    instructionString += LDA(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0xA6:
-                    instructionString += "LDX: Load X using Zero Page";
-                    operandLength += 1;
+                    instructionString += LDX(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0xA7:
-                    instructionString += "LAX: Illegal";
+                    instructionString += "*LAX";
                     break;
 
                 case 0xA8:
-                    instructionString += "TAY: Transfer A to Y";
+                    //instructionString += "TAY: Transfer A to Y";
+                    instructionString += TAY(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0xA9:
-                    instructionString += "LDA: Load Accumulator using #Immediate";
-                    operandLength = 1;
+                    instructionString += LDA(AddressingMode.Immediate, bF, pc);
                     break;
 
                 case 0xAA:
-                    instructionString += "TAX: Transfer Accumulator to X";
+                    //instructionString += "TAX: Transfer Accumulator to X";
+                    instructionString += TAX(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0xAB:
-                    instructionString += "LAX: Illegal";
+                    instructionString += "*LAX";
                     break;
 
                 case 0xAC:
-                    instructionString += "LDY: Load Index Register Y using Absolute";
-                    operandLength += 2;
+                    instructionString += LDY(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0xAD:
-                    instructionString += "LDA: Load Accumulator Absolute";
-                    operandLength = 2;
+                    instructionString += LDA(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0xAE:
-                    instructionString += "LDX: Load X using Absolute";
-                    operandLength += 2;
+                    instructionString += LDX(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0xAF:
-                    instructionString += "LAX: Illegal";
+                    instructionString += "*LAX";
                     break;
 
                 case 0xB0:
-                    instructionString += "BCS: Branch if Carry Set";
-                    operandLength += 1;
+                    //instructionString += "BCS: Branch if Carry Set";
+                    instructionString += BCS(AddressingMode.Relative, bF, pc);
                     break;
 
                 case 0xB1:
-                    instructionString += "LDA: Load Accumulator (Indirect), Y";
-                    operandLength += 1;
+                    instructionString += LDA(AddressingMode.IndirectY, bF, pc);
                     break;
 
                 case 0xB2:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0xB3:
-                    instructionString += "LAX: Illegal";
+                    instructionString += "*LAX";
                     break;
 
                 case 0xB4:
-                    instructionString += "LDY: Load Index Register Y using Zero Page, X";
-                    operandLength += 1;
+                    instructionString += LDY(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0xB5:
-                    instructionString += "LDA: Load Accumulator using Zero Page, X";
-                    operandLength += 1;
+                    instructionString += LDA(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0xB6:
-                    instructionString += "LDX: Load X using Zero Page, Y";
-                    operandLength += 1;
+                    instructionString += LDX(AddressingMode.ZeroPageY, bF, pc);
                     break;
 
                 case 0xB7:
-                    instructionString += "LAX: Illegal";
+                    instructionString += "*LAX";
                     break;
 
                 case 0xB8:
-                    instructionString += "CLV: Clear Overflow";
+                    //instructionString += "CLV: Clear Overflow";
+                    instructionString += CLV(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0xB9:
-                    instructionString += "LDA: Load into Accumulator using Absolute, Y";
-                    operandLength += 2;
+                    instructionString += LDA(AddressingMode.AbsoluteY, bF, pc);
                     break;
 
                 case 0xBA:
-                    instructionString += "TSX: Transfer Stack Pointer to X";
+                    //instructionString += "TSX: Transfer Stack Pointer to X";
+                    instructionString += TSX(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0xBB:
-                    instructionString += "LAS: Illegal";
+                    instructionString += "*LAS";
                     break;
 
                 case 0xBC:
-                    instructionString += "LDY: Load Index Register Y using Absolute, X";
-                    operandLength += 2;
+                    instructionString += LDY(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0xBD:
-                    instructionString += "LDA: Load into Accumulator using Absolute, X";
-                    operandLength += 2;
+                    instructionString += LDA(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0xBE:
-                    instructionString += "LDX: Load X using Absolute, Y";
-                    operandLength += 2;
+                    instructionString += LDX(AddressingMode.AbsoluteY, bF, pc);
                     break;
 
                 case 0xBF:
-                    instructionString += "LAX: Illegal";
+                    instructionString += "*LAX";
                     break;
 
                 case 0xC0:
-                    instructionString += "CPY: Compare Y with #Immediate";
-                    operandLength += 1;
+                    instructionString += CPY(AddressingMode.Immediate, bF, pc);
                     break;
 
                 case 0xC1:
-                    instructionString += "CMP: Compare Accumulator to (Indirect, X)";
-                    operandLength += 1;
+                    instructionString += CMP(AddressingMode.IndirectX, bF, pc);
                     break;
 
                 case 0xC2:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0xC3:
-                    instructionString += "DCP: Illegal";
+                    instructionString += "*DCP";
                     break;
 
                 case 0xC4:
-                    instructionString += "CPY: Compare Y with Zero Page";
-                    operandLength += 1;
+                    instructionString += CPY(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0xC5:
-                    instructionString += "CMP: Compare Accumulator to Zero Page";
-                    operandLength += 1;
+                    instructionString += CMP(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0xC6:
-                    instructionString += "DEC: Decrement Zero Page";
-                    operandLength += 1;
+                    instructionString += DEC(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0xC7:
-                    instructionString += "DCP: Illegal";
+                    instructionString += "*DCP";
                     break;
 
                 case 0xC8:
-                    instructionString += "INY: Increment Y";
+                    //instructionString += "INY: Increment Y";
+                    instructionString += INY(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0xC9:
-                    instructionString += "CPY: Compare Accumulator with #Immediate";
-                    operandLength = 1;
+                    instructionString += CMP(AddressingMode.Immediate, bF, pc);
                     break;
 
                 case 0xCA:
-                    instructionString += "DEX: Decrement X";
+                    //instructionString += "DEX: Decrement X";
+                    instructionString += DEX(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0xCB:
-                    instructionString += "AXS: Illegal";
+                    instructionString += "*AXS";
                     break;
 
                 case 0xCC:
-                    instructionString += "CPY: Compare Y with Absolute";
-                    operandLength += 2;
+                    instructionString += CPY(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0xCD:
-                    instructionString += "CPY: Compare Accumulator with Absolute";
-                    operandLength += 2;
+                    instructionString += CMP(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0xCE:
-                    instructionString += "DEC: Decrement Absolute";
-                    operandLength += 2;
+                    instructionString += DEC(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0xCF:
-                    instructionString += "DCP: Illegal";
+                    instructionString += "*DCP";
                     break;
 
                 case 0xD0:
-                    instructionString += "BNE: Branch if Not Equal";
+                    //instructionString += "BNE: Branch if Not Equal";
+                    instructionString += BNE(AddressingMode.Relative, bF, pc);
                     operandLength = 1;
                     break;
 
                 case 0xD1:
-                    instructionString += "CMP: Compare Accumulator to (Indirect), Y";
-                    operandLength += 1;
+                    instructionString += CMP(AddressingMode.IndirectY, bF, pc);
                     break;
 
                 case 0xD2:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0xD3:
-                    instructionString += "DCP: Illegal";
+                    instructionString += "*DCP";
                     break;
 
                 case 0xD4:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0xD5:
-                    instructionString += "CMP: Compare Accumulator to Zero Page, X";
-                    operandLength += 1;
+                    instructionString += CMP(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0xD6:
-                    instructionString += "DEC: Decrement Zero Page, X";
-                    operandLength += 1;
+                    instructionString += DEC(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0xD7:
-                    instructionString += "DCP: Illegal";
+                    instructionString += "*DCP";
                     break;
 
                 case 0xD8:
-                    instructionString += "CLD: Clear Decimal";
+                    //instructionString += "CLD: Clear Decimal";
+                    instructionString += CLD(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0xD9:
-                    instructionString += "CPY: Compare Accumulator with Absolute, Y";
-                    operandLength += 2;
+                    instructionString += CMP(AddressingMode.AbsoluteY, bF, pc);
                     break;
 
                 case 0xDA:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0xDB:
-                    instructionString += "DCP: Illegal";
+                    instructionString += "*DCP";
                     break;
 
                 case 0xDC:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0xDD:
-                    instructionString += "CPY: Compare Accumulator with Absolute, X";
-                    operandLength += 2;
+                    instructionString += CMP(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0xDE:
-                    instructionString += "DEC: Decrement Absolute, X";
-                    operandLength += 2;
+                    instructionString += DEC(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0xDF:
-                    instructionString += "DCP: Illegal";
+                    instructionString += "*DCP";
                     break;
 
                 case 0xE0:
-                    instructionString += "CPX: Compare X to #Immediate";
-                    operandLength += 1;
+                    instructionString += CPX(AddressingMode.Immediate, bF, pc);
                     break;
 
                 case 0xE1:
-                    instructionString += "SBC: Subtract with Carry using (Indirect, X)";
-                    operandLength += 1;
+                    instructionString += SBC(AddressingMode.IndirectX, bF, pc);
                     break;
 
                 case 0xE2:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0xE3:
-                    instructionString += "ISC: Illegal";
+                    instructionString += "*ISC";
                     break;
 
                 case 0xE4:
-                    instructionString += "CPX: Compare X to Zero Page";
-                    operandLength += 1;
+                    instructionString += CPX(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0xE5:
-                    instructionString += "SBC: Subtract with Carry using Zero Page";
-                    operandLength = 1;
+                    instructionString += SBC(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0xE6:
-                    instructionString += "INC: Increment Zero Page";
-                    operandLength += 1;
+                    instructionString += INC(AddressingMode.ZeroPage, bF, pc);
                     break;
 
                 case 0xE7:
-                    instructionString += "ISC: Illegal";
+                    instructionString += "*ISC";
                     break;
 
                 case 0xE8:
-                    instructionString += "INX: Increment Index Register X";
+                    //instructionString += "INX: Increment Index Register X";
+                    instructionString += INX(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0xE9:
-                    instructionString += "SBC: Subtract with Carry using #Immediate";
-                    operandLength = 1;
+                    instructionString += SBC(AddressingMode.Immediate, bF, pc);
                     break;
 
                 case 0xEA:
-                    instructionString += "NOP: No Operation";
+                    //instructionString += "NOP: No Operation";
+                    instructionString += NOP(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0xEB:
-                    instructionString += "SBC: Illegal";
+                    instructionString += "*SBC";
                     break;
 
                 case 0xEC:
-                    instructionString += "CPX: Compare X to Absolute";
-                    operandLength += 2;
+                    instructionString += CPX(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0xED:
-                    instructionString += "SBC: Subtract with Carry using Absolute";
-                    operandLength += 2;
+                    instructionString += SBC(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0xEE:
-                    instructionString += "INC: Increment Absolute";
-                    operandLength += 2;
+                    instructionString += INC(AddressingMode.Absolute, bF, pc);
                     break;
 
                 case 0xEF:
-                    instructionString += "ISC: Illegal";
+                    instructionString += "*ISC";
                     break;
 
                 case 0xF0:
-                    instructionString += "BEQ: Branch if Equal Relative";
-                    operandLength += 1;
+                    //instructionString += "BEQ: Branch if Equal Relative";
+                    instructionString += BEQ(AddressingMode.Relative, bF, pc);
                     break;
 
                 case 0xF1:
-                    instructionString += "SBC: Subtract with Carry using (Indirect, Y)";
-                    operandLength += 1;
+                    instructionString += SBC(AddressingMode.IndirectY, bF, pc);
                     break;
 
                 case 0xF2:
-                    instructionString += "KIL: Halt program (Illegal)";
+                    instructionString += "*KIL";
                     break;
 
                 case 0xF3:
-                    instructionString += "ISC: Illegal";
+                    instructionString += "*ISC";
                     break;
 
                 case 0xF4:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0xF5:
-                    instructionString += "SBC: Subtract with Carry using Zero Page, X";
-                    operandLength += 1;
+                    instructionString += SBC(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0xF6:
-                    instructionString += "INC: Increment Zero Page, X";
-                    operandLength += 1;
+                    instructionString += INC(AddressingMode.ZeroPageX, bF, pc);
                     break;
 
                 case 0xF7:
-                    instructionString += "ISC: Illegal";
+                    instructionString += "*ISC";
                     break;
 
                 case 0xF8:
-                    instructionString += "SED: Set Decimal";
+                    //instructionString += "SED: Set Decimal";
+                    instructionString += SED(AddressingMode.Implied, bF, pc);
                     break;
 
                 case 0xF9:
-                    instructionString += "SBC: Subtract with Carry using Absolute, Y";
-                    operandLength += 2;
+                    instructionString += SBC(AddressingMode.AbsoluteY, bF, pc);
                     break;
 
                 case 0xFA:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0xFB:
-                    instructionString += "ISC: Illegal";
+                    instructionString += "*ISC";
                     break;
 
                 case 0xFC:
-                    instructionString += "NOP: Illegal";
+                    instructionString += "*NOP";
                     break;
 
                 case 0xFD:
-                    instructionString += "SBC: Subtract with Carry using Absolute, X";
-                    operandLength += 2;
+                    instructionString += SBC(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0xFE:
-                    instructionString += "INC: Increment Absolute, X";
-                    operandLength += 2;
+                    instructionString += INC(AddressingMode.AbsoluteX, bF, pc);
                     break;
 
                 case 0xFF:
-                    instructionString += "N/A";
+                    instructionString += "*ISC";
                     break;
             }
 
             return instructionString;
         }
 
-
         static void Print(List<byte> binaryFile, string instructionString)
         {
             // Print
-            string PCString = "PC: ";
+            string PCString = "";
+            //"PC: ";
 
             if (PC <= 0xF)
                 PCString += $"0x000{PC:X}";
@@ -1276,12 +1700,13 @@ namespace NES_Disassembler
             string opcodeString = "Opcode: ";
 
             //$"0x{ binaryFile[PC]:X}"
-            if (binaryFile[(int)PC] <= 0xF)
-                opcodeString += $"0x0{binaryFile[(int)PC]:X}";
+            if (binaryFile[(int)PC + 0x10] <= 0xF)
+                opcodeString += $"0x0{binaryFile[(int)PC + 0x10]:X}";
             else
-                opcodeString += $"0x{binaryFile[(int)PC]:X}";
+                opcodeString += $"0x{binaryFile[(int)PC + 0x10]:X}";
 
-            Console.WriteLine(PCString + " | " + opcodeString + " | " + instructionString);
+            //Console.WriteLine(PCString + " | " + opcodeString + " | " + instructionString);
+            Console.WriteLine(instructionString);
         }
         
         static void Main(string[] args)
@@ -1303,13 +1728,16 @@ namespace NES_Disassembler
                 // Get the iNES header (if it exists)
                 byte b;
 
-                // Check the NES header (4E 45 53 1A)
+                // Check the iNES header (4E 45 53 1A)
                 if(binaryFile[0] == 0x4E && binaryFile[1] == 0x45 && binaryFile[2] == 0x53 && binaryFile[3] == 0x1A)
                 {
+                    // Set the number of PRG and CHR blocks
                     numberOfPRGROMBlocks = binaryFile[4];
                     numberOfCHRROMBlocks = binaryFile[5];
 
                     // Check the mapper type
+
+                    subroutineStartingAddresses = new List<int>();
 
                     //while (PC < binaryFile.Count)
                     while (PC < 0x8000 * numberOfPRGROMBlocks)
@@ -1318,12 +1746,12 @@ namespace NES_Disassembler
                         //if (PC >= header)
                         {
                             operandLength = 0;
-                            b = binaryFile[(int)PC + 0x10];
+                            //b = binaryFile[(int)PC + 0x10];
 
                             // Fetch
 
                             // Decode
-                            string instructionString = Decode(b);
+                            string instructionString = Decode(binaryFile, PC);
 
 
                             // Print
